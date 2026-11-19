@@ -1,0 +1,6 @@
+{
+  "name": "Bashundhara Beauty",
+  "description": "Searchable directory of cosmetic, skincare, K-beauty, and fragrance shop websites in Bashundhara City Shopping Complex, Dhaka, with direct website and Google Maps access.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
