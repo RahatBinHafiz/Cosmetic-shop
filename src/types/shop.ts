@@ -1,3 +1,5 @@
+export type MallId = 'bashundhara-city' | 'jamuna-future-park';
+
 export type ShopCategory =
   | 'Skincare & Makeup'
   | 'K-Beauty'
@@ -5,14 +7,32 @@ export type ShopCategory =
   | 'Derma & Organic'
   | 'Personal Care';
 
-export type MallLevel = 'Level 1' | 'Level 2' | 'Level 3' | 'Level 4';
+export type MallLevel =
+  | 'Ground Floor'
+  | 'Level 1'
+  | 'Level 2'
+  | 'Level 3'
+  | 'Level 4';
 
 export type SortOption = 'featured' | 'name-asc' | 'level-asc';
 
 export type ViewMode = 'grid' | 'list';
 
+export interface MallInfo {
+  id: MallId;
+  shortName: string;
+  name: string;
+  area: string;
+  address: string;
+  hours: string;
+  closedDay: string;
+  googleMapsUrl: string;
+  officialWebsiteUrl?: string;
+}
+
 export interface CosmeticShop {
   id: string;
+  mall: MallId;
   name: string;
   category: ShopCategory;
   levels: MallLevel[];
@@ -32,6 +52,7 @@ export interface CosmeticShop {
 }
 
 export interface DirectoryFilters {
+  mall: MallId | 'All';
   query: string;
   category: ShopCategory | 'All';
   level: MallLevel | 'All';
@@ -41,6 +62,7 @@ export interface DirectoryFilters {
 }
 
 export interface NewShopInput {
+  mall: MallId;
   name: string;
   websiteUrl: string;
   category: ShopCategory;
@@ -60,6 +82,7 @@ export interface ShopValidationErrors {
 }
 
 export interface FloorSummary {
+  mall: MallId;
   level: MallLevel;
   shopCount: number;
   blocks: string[];

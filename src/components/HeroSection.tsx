@@ -10,7 +10,7 @@ interface HeroSectionProps {
   onQuickSearch: (term: string) => void;
 }
 
-const QUICK_SEARCH_TERMS = ['Korean', 'Perfume', 'Flormar', 'Level 3', 'Derma'];
+const QUICK_SEARCH_TERMS = ['Sundora', 'The Body Shop', 'Korean', 'Perfume', 'Ground Floor', 'Level 3'];
 
 export function HeroSection({
   query,
@@ -29,23 +29,23 @@ export function HeroSection({
           <div className="lg:col-span-7 flex flex-col justify-between gap-8">
             <div className="space-y-4">
               <p className="text-sm text-[#71717A]">
-                Bashundhara City Shopping Complex · Panthapath, Dhaka
+                Bashundhara City &amp; Jamuna Future Park · Dhaka, Bangladesh
               </p>
 
               <h1 className="font-serif text-[clamp(2.25rem,3.8vw,3.35rem)] font-semibold leading-[1.12] tracking-tight text-[#18181B]">
-                Cosmetic shop websites, indexed by floor.
+                Cosmetic shop websites, indexed by mall &amp; floor.
               </h1>
 
               <p className="text-base leading-relaxed text-[#52525B] max-w-xl">
-                A curated, searchable directory of skincare, makeup, K-beauty, and fragrance
-                stores inside Bashundhara City—compiled from Google Maps and official store portals
-                for one-click access.
+                A curated, searchable directory of skincare, makeup, K-beauty, and fragrance stores
+                across Bashundhara City (Panthapath) and Jamuna Future Park (Kuril)—with direct
+                website and Google Maps access.
               </p>
             </div>
 
             <div className="space-y-3">
               <label htmlFor="directory-search" className="sr-only">
-                Search cosmetic shops, brands, floor levels, or websites
+                Search cosmetic shops, malls, brands, floor levels, or websites
               </label>
               <div className="relative flex items-center">
                 <Search
@@ -58,7 +58,7 @@ export function HeroSection({
                   type="search"
                   value={query}
                   onChange={(event) => onQueryChange(event.target.value)}
-                  placeholder="Search shop, brand, floor, or website..."
+                  placeholder="Search shop, mall, brand, floor, or website..."
                   className="w-full h-12 pl-11 pr-12 text-sm sm:text-[15px] text-[#18181B] placeholder:text-[#71717A] bg-[#FAF9F7] border border-[#DCD7CF] rounded-xl focus:bg-white focus:border-[#9E4A56] focus:outline-none focus:ring-2 focus:ring-[#9E4A56]/20 transition-colors"
                 />
                 {query ? (
@@ -109,7 +109,7 @@ export function HeroSection({
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-[#F3F1EE] text-[#52525B]">
                   <Sparkles className="w-6 h-6 mb-3 text-[#9E4A56]" aria-hidden="true" />
-                  <p className="font-serif text-lg text-[#18181B]">Bashundhara Beauty Index</p>
+                  <p className="font-serif text-lg text-[#18181B]">Dhaka Beauty Index</p>
                   <p className="text-xs text-[#71717A] mt-1">Skincare, Makeup & Fragrances</p>
                 </div>
               )}
@@ -131,15 +131,15 @@ export function HeroSection({
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-[#71717A]">Mall Coverage</dt>
+            <dt className="text-xs text-[#71717A]">Shopping Malls</dt>
             <dd className="mt-1 text-xl font-semibold text-[#18181B] tabular-nums">
-              Levels 1 – 4
+              2 Major Malls
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-[#71717A]">Weekly Schedule</dt>
-            <dd className="mt-1 text-xl font-semibold text-[#18181B]">
-              Closed Tuesdays
+            <dt className="text-xs text-[#71717A]">Floor Coverage</dt>
+            <dd className="mt-1 text-xl font-semibold text-[#18181B] tabular-nums">
+              Ground – Level 4
             </dd>
           </div>
         </dl>

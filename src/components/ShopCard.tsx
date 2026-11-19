@@ -7,6 +7,7 @@ import {
   MapPin,
   Trash2,
 } from 'lucide-react';
+import { MALLS } from '../data/shops';
 import type { CosmeticShop } from '../types/shop';
 import { extractDisplayDomain } from '../utils/directory';
 
@@ -43,6 +44,8 @@ export function ShopCard({
 }: ShopItemProps) {
   const targetUrl = shop.websiteUrl ?? shop.googleMapsUrl;
   const domainLabel = extractDisplayDomain(shop.websiteUrl);
+  const mallLabel = MALLS[shop.mall].shortName;
+  const fullLocation = `${mallLabel} · ${shop.primaryLevel} · ${shop.block} · ${shop.shopNumber}`;
   const { copied, handleCopy } = useCopyLink(targetUrl);
 
   return (
@@ -53,10 +56,10 @@ export function ShopCard({
       <div>
         <div className="flex items-start justify-between gap-3">
           <p
-            title={`${shop.primaryLevel} · ${shop.block} · ${shop.shopNumber}`}
+            title={fullLocation}
             className="text-xs text-[#71717A] tabular-nums leading-snug truncate min-w-0"
           >
-            {shop.primaryLevel} · {shop.block} · {shop.shopNumber}
+            {shop.primaryLevel} · {shop.shopNumber}
           </p>
 
           <div className="flex items-center gap-1 -mt-1.5 -mr-1.5 shrink-0">
@@ -100,9 +103,13 @@ export function ShopCard({
           </button>
         </h3>
 
-        <p className="mt-1 text-xs font-medium text-[#9E4A56]">
-          {shop.category}
-          {shop.isUserAdded ? ' · Added by you' : ''}
+        <p className="mt-1 text-xs leading-snug">
+          <span className="font-medium text-[#52525B]">{mallLabel}</span>
+          <span aria-hidden="true" className="mx-1.5 text-[#CFC9BF]">
+            ·
+          </span>
+          <span className="font-medium text-[#9E4A56]">{shop.category}</span>
+          {shop.isUserAdded ? <span className="text-[#71717A]"> · Added by you</span> : null}
         </p>
 
         <p className="mt-3 text-sm leading-relaxed text-[#52525B]">{shop.description}</p>
@@ -185,6 +192,7 @@ export function ShopListRow({
 }: ShopItemProps) {
   const targetUrl = shop.websiteUrl ?? shop.googleMapsUrl;
   const domainLabel = extractDisplayDomain(shop.websiteUrl);
+  const mallLabel = MALLS[shop.mall].shortName;
   const { copied, handleCopy } = useCopyLink(targetUrl);
 
   return (
@@ -208,7 +216,7 @@ export function ShopListRow({
             ·
           </span>
           <span className="text-xs text-[#71717A] tabular-nums">
-            {shop.primaryLevel}, {shop.block}, {shop.shopNumber}
+            {mallLabel} · {shop.primaryLevel}, {shop.block}, {shop.shopNumber}
           </span>
         </div>
 

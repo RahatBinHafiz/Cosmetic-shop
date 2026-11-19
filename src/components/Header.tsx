@@ -12,7 +12,7 @@ export function Header({ savedCount, onOpenAddModal, onJumpToSaved }: HeaderProp
           href="#top"
           className="font-serif text-xl font-semibold tracking-tight text-[#18181B] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9E4A56]"
         >
-          Bashundhara Beauty
+          Dhaka Beauty Index
         </a>
 
         <nav

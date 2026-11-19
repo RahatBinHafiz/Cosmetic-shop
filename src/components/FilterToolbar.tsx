@@ -1,7 +1,8 @@
 import { LayoutGrid, List, Bookmark, Globe } from 'lucide-react';
-import { MALL_LEVELS, SHOP_CATEGORIES } from '../data/shops';
+import { MALL_LEVELS, MALL_LIST, SHOP_CATEGORIES } from '../data/shops';
 import type {
   DirectoryFilters,
+  MallId,
   MallLevel,
   ShopCategory,
   SortOption,
@@ -11,6 +12,7 @@ import type {
 interface FilterToolbarProps {
   filters: DirectoryFilters;
   onUpdateFilters: (partial: Partial<DirectoryFilters>) => void;
+  mallCounts: Record<MallId | 'All', number>;
   categoryCounts: Record<ShopCategory | 'All', number>;
   savedCount: number;
   resultCount: number;
@@ -26,6 +28,7 @@ const ALL_CATEGORIES: Array<ShopCategory | 'All'> = ['All', ...SHOP_CATEGORIES];
 export function FilterToolbar({
   filters,
   onUpdateFilters,
+  mallCounts,
   categoryCounts,
   savedCount,
   resultCount,
@@ -35,34 +38,69 @@ export function FilterToolbar({
   hasActiveFilters,
   onResetFilters,
 }: FilterToolbarProps) {
+  const mallOptions: Array<{ id: MallId | 'All'; label: string }> = [
+    { id: 'All', label: 'All Malls' },
+    ...MALL_LIST.map((mall) => ({ id: mall.id, label: mall.shortName })),
+  ];
+
   return (
     <div className="space-y-4">
-      <div
-        role="group"
-        aria-label="Filter by beauty category"
-        className="flex flex-wrap items-center gap-1.5 p-1 bg-[#F3F1EE] rounded-xl w-full sm:w-fit"
-      >
-        {ALL_CATEGORIES.map((category) => {
-          const isActive = filters.category === category;
-          return (
-            <button
-              key={category}
-              type="button"
-              aria-pressed={isActive}
-              onClick={() => onUpdateFilters({ category })}
-              className={`px-3.5 py-2 min-h-10 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E4A56] tabular-nums ${
-                isActive
-                  ? 'bg-white text-[#18181B] shadow-xs'
-                  : 'text-[#52525B] hover:text-[#18181B]'
-              }`}
-            >
-              {category}{' '}
-              <span className={isActive ? 'text-[#9E4A56]' : 'text-[#71717A]'}>
-                ({categoryCounts[category]})
-              </span>
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-3">
+        <div
+          role="group"
+          aria-label="Filter by shopping mall"
+          className="flex flex-wrap items-center gap-1.5 p-1 bg-white border border-[#E7E4DF] rounded-xl w-full sm:w-fit"
+        >
+          {mallOptions.map((option) => {
+            const isActive = filters.mall === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => onUpdateFilters({ mall: option.id, level: 'All' })}
+                className={`px-3.5 py-2 min-h-10 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E4A56] tabular-nums ${
+                  isActive
+                    ? 'bg-[#18181B] text-white'
+                    : 'text-[#52525B] hover:text-[#18181B] hover:bg-[#FAF9F7]'
+                }`}
+              >
+                {option.label}{' '}
+                <span className={isActive ? 'text-white/75' : 'text-[#71717A]'}>
+                  ({mallCounts[option.id]})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          role="group"
+          aria-label="Filter by beauty category"
+          className="flex flex-wrap items-center gap-1.5 p-1 bg-[#F3F1EE] rounded-xl w-full sm:w-fit"
+        >
+          {ALL_CATEGORIES.map((category) => {
+            const isActive = filters.category === category;
+            return (
+              <button
+                key={category}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => onUpdateFilters({ category })}
+                className={`px-3 py-2 min-h-10 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E4A56] tabular-nums ${
+                  isActive
+                    ? 'bg-white text-[#18181B] shadow-xs'
+                    : 'text-[#52525B] hover:text-[#18181B]'
+                }`}
+              >
+                {category}{' '}
+                <span className={isActive ? 'text-[#9E4A56]' : 'text-[#71717A]'}>
+                  ({categoryCounts[category]})
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">

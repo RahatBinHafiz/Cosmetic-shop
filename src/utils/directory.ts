@@ -1,7 +1,9 @@
+import { MALLS } from '../data/shops';
 import type {
   CosmeticShop,
   DirectoryFilters,
   FloorSummary,
+  MallId,
   MallLevel,
   NewShopInput,
   ShopCategory,
@@ -9,6 +11,7 @@ import type {
 } from '../types/shop';
 
 const LEVEL_ORDER: Record<MallLevel, number> = {
+  'Ground Floor': 0,
   'Level 1': 1,
   'Level 2': 2,
   'Level 3': 3,
@@ -28,7 +31,11 @@ export function normalizeWebsiteUrl(rawUrl: string): string | null {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return null;
     }
-    if (!parsed.hostname.includes('.') || parsed.hostname.startsWith('.') || parsed.hostname.endsWith('.')) {
+    if (
+      !parsed.hostname.includes('.') ||
+      parsed.hostname.startsWith('.') ||
+      parsed.hostname.endsWith('.')
+    ) {
       return null;
     }
     return parsed.toString().replace(/\/$/, '');
@@ -49,13 +56,19 @@ export function extractDisplayDomain(url: string | null): string {
   }
 }
 
-export function buildGoogleMapsUrl(shopName: string, locationLabel?: string): string {
-  const parts = [shopName.trim(), locationLabel?.trim(), 'Bashundhara City Dhaka'].filter(Boolean);
+export function buildGoogleMapsUrl(
+  shopName: string,
+  mallId: MallId,
+  locationLabel?: string
+): string {
+  const mallName = MALLS[mallId].shortName;
+  const parts = [shopName.trim(), locationLabel?.trim(), `${mallName} Dhaka`].filter(Boolean);
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(' '))}`;
 }
 
-export function buildGoogleSearchUrl(shopName: string): string {
-  return `https://www.google.com/search?q=${encodeURIComponent(`${shopName.trim()} Bashundhara City Dhaka`)}`;
+export function buildGoogleSearchUrl(shopName: string, mallId: MallId): string {
+  const mallName = MALLS[mallId].shortName;
+  return `https://www.google.com/search?q=${encodeURIComponent(`${shopName.trim()} ${mallName} Dhaka`)}`;
 }
 
 export function filterAndSortShops(
@@ -66,6 +79,10 @@ export function filterAndSortShops(
   const normalizedQuery = filters.query.trim().toLowerCase();
 
   const filtered = shops.filter((shop) => {
+    if (filters.mall !== 'All' && shop.mall !== filters.mall) {
+      return false;
+    }
+
     if (filters.category !== 'All' && shop.category !== filters.category) {
       return false;
     }
@@ -86,8 +103,12 @@ export function filterAndSortShops(
       return true;
     }
 
+    const mallInfo = MALLS[shop.mall];
     const searchableText = [
       shop.name,
+      mallInfo.shortName,
+      mallInfo.name,
+      mallInfo.area,
       shop.category,
       shop.primaryLevel,
       ...shop.levels,
@@ -134,7 +155,7 @@ export function validateNewShopInput(input: NewShopInput): ShopValidationErrors 
   }
 
   if (input.block.trim().length < 1) {
-    errors.block = 'Specify a block or zone (e.g. Block B or Block C).';
+    errors.block = 'Specify a block, court, or zone (e.g. Zone B or Block C).';
   }
 
   if (input.description.trim().length < 10) {
@@ -155,6 +176,7 @@ export function createCustomShop(input: NewShopInput, existingCount: number): Co
 
   return {
     id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    mall: input.mall,
     name: input.name.trim(),
     category: input.category,
     levels: [input.level],
@@ -162,8 +184,8 @@ export function createCustomShop(input: NewShopInput, existingCount: number): Co
     block: blockText,
     shopNumber: shopNumberText,
     websiteUrl: normalizedUrl,
-    googleMapsUrl: buildGoogleMapsUrl(input.name, `${input.level} ${blockText}`),
-    googleSearchUrl: buildGoogleSearchUrl(input.name),
+    googleMapsUrl: buildGoogleMapsUrl(input.name, input.mall, `${input.level} ${blockText}`),
+    googleSearchUrl: buildGoogleSearchUrl(input.name, input.mall),
     phone: input.phone.trim() || undefined,
     description: input.description.trim(),
     specialties: specialties.length > 0 ? specialties : [input.category],
@@ -173,9 +195,27 @@ export function createCustomShop(input: NewShopInput, existingCount: number): Co
   };
 }
 
-export function getCategoryCounts(shops: CosmeticShop[]): Record<ShopCategory | 'All', number> {
-  const counts: Record<ShopCategory | 'All', number> = {
+export function getMallCounts(shops: CosmeticShop[]): Record<MallId | 'All', number> {
+  const counts: Record<MallId | 'All', number> = {
     All: shops.length,
+    'bashundhara-city': 0,
+    'jamuna-future-park': 0,
+  };
+
+  for (const shop of shops) {
+    counts[shop.mall] += 1;
+  }
+
+  return counts;
+}
+
+export function getCategoryCounts(
+  shops: CosmeticShop[],
+  mall: MallId | 'All' = 'All'
+): Record<ShopCategory | 'All', number> {
+  const scopedShops = mall === 'All' ? shops : shops.filter((shop) => shop.mall === mall);
+  const counts: Record<ShopCategory | 'All', number> = {
+    All: scopedShops.length,
     'Skincare & Makeup': 0,
     'K-Beauty': 0,
     Fragrances: 0,
@@ -183,37 +223,63 @@ export function getCategoryCounts(shops: CosmeticShop[]): Record<ShopCategory | 
     'Personal Care': 0,
   };
 
-  for (const shop of shops) {
+  for (const shop of scopedShops) {
     counts[shop.category] += 1;
   }
 
   return counts;
 }
 
-const FLOOR_DESCRIPTIONS: Record<MallLevel, string> = {
-  'Level 1':
-    'Primary cosmetics & fragrance corridor centered around Block C and Block D, featuring dermo-skincare, perfumeries, and department beauty.',
-  'Level 2':
-    'Connected multi-floor retail access including the Aarong Earth botanical beauty wing in Block B.',
-  'Level 3':
-    'Boutique makeup and K-Beauty cluster in Block B, popular for imported US/UK cosmetics and Korean skincare.',
-  'Level 4':
-    'Lifestyle beauty tools, everyday accessories, and upper-level flagship wings in Block B.',
+const MALL_FLOOR_CONFIG: Record<
+  MallId,
+  Array<{ level: MallLevel; description: string }>
+> = {
+  'bashundhara-city': [
+    {
+      level: 'Level 1',
+      description:
+        'Primary cosmetics & fragrance corridor centered around Block C and Block D, featuring dermo-skincare, perfumeries, and department beauty.',
+    },
+    {
+      level: 'Level 3',
+      description:
+        'Boutique makeup and K-Beauty cluster in Block B, popular for imported US/UK cosmetics and Korean skincare.',
+    },
+    {
+      level: 'Level 4',
+      description:
+        'Lifestyle beauty tools, everyday accessories, and upper-level flagship wings in Block B.',
+    },
+  ],
+  'jamuna-future-park': [
+    {
+      level: 'Ground Floor',
+      description:
+        'Main luxury beauty, fragrance, and skincare promenade across Zone A, Zone B, and West Court—home to Sundora, Shajgoj, Flormar, and Al Haramain.',
+    },
+    {
+      level: 'Level 1',
+      description:
+        'Upper beauty & K-Beauty level featuring The Body Shop, Shijang, DASH Fragrances, A1 Traders, and Aarong Earth.',
+    },
+  ],
 };
 
-export function getFloorSummaries(shops: CosmeticShop[]): FloorSummary[] {
-  const targetLevels: MallLevel[] = ['Level 1', 'Level 3', 'Level 4'];
+export function getFloorSummaries(shops: CosmeticShop[], mall: MallId): FloorSummary[] {
+  const mallShops = shops.filter((shop) => shop.mall === mall);
+  const configs = MALL_FLOOR_CONFIG[mall];
 
-  return targetLevels.map((level) => {
-    const matching = shops.filter((shop) => shop.levels.includes(level));
+  return configs.map(({ level, description }) => {
+    const matching = mallShops.filter((shop) => shop.levels.includes(level));
     const blocks = Array.from(new Set(matching.map((shop) => shop.block)));
 
     return {
+      mall,
       level,
       shopCount: matching.length,
       blocks,
       highlightNames: matching.slice(0, 4).map((shop) => shop.name),
-      summaryText: FLOOR_DESCRIPTIONS[level],
+      summaryText: description,
     };
   });
 }

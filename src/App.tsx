@@ -11,6 +11,7 @@ import { INITIAL_SHOPS } from './data/shops';
 import type {
   CosmeticShop,
   DirectoryFilters,
+  MallId,
   MallLevel,
   NewShopInput,
   ViewMode,
@@ -20,12 +21,14 @@ import {
   filterAndSortShops,
   getCategoryCounts,
   getFloorSummaries,
+  getMallCounts,
 } from './utils/directory';
 
 const STORAGE_SAVED_KEY = 'bashundhara-beauty-saved-ids-v1';
 const STORAGE_CUSTOM_SHOPS_KEY = 'bashundhara-beauty-custom-shops-v1';
 
 const DEFAULT_FILTERS: DirectoryFilters = {
+  mall: 'All',
   query: '',
   category: 'All',
   level: 'All',
@@ -54,7 +57,13 @@ function readStoredCustomShops(): CosmeticShop[] {
       return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as CosmeticShop[]) : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.map((shop) => ({
+      ...(shop as CosmeticShop),
+      mall: (shop as Partial<CosmeticShop>).mall ?? 'bashundhara-city',
+    }));
   } catch {
     return [];
   }
@@ -64,6 +73,7 @@ export default function App() {
   const [customShops, setCustomShops] = useState<CosmeticShop[]>(readStoredCustomShops);
   const [savedIds, setSavedIds] = useState<string[]>(readStoredIds);
   const [filters, setFilters] = useState<DirectoryFilters>(DEFAULT_FILTERS);
+  const [guideMall, setGuideMall] = useState<MallId>('bashundhara-city');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedShop, setSelectedShop] = useState<CosmeticShop | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -86,6 +96,12 @@ export default function App() {
       // Ignore storage quota issues in restricted environments.
     }
   }, [customShops]);
+
+  useEffect(() => {
+    if (filters.mall !== 'All') {
+      setGuideMall(filters.mall);
+    }
+  }, [filters.mall]);
 
   useEffect(() => {
     const handleSlashShortcut = (event: KeyboardEvent) => {
@@ -126,14 +142,22 @@ export default function App() {
     [allShops, filters, savedSet]
   );
 
-  const categoryCounts = useMemo(() => getCategoryCounts(allShops), [allShops]);
-  const floorSummaries = useMemo(() => getFloorSummaries(allShops), [allShops]);
+  const mallCounts = useMemo(() => getMallCounts(allShops), [allShops]);
+  const categoryCounts = useMemo(
+    () => getCategoryCounts(allShops, filters.mall),
+    [allShops, filters.mall]
+  );
+  const floorSummaries = useMemo(
+    () => getFloorSummaries(allShops, guideMall),
+    [allShops, guideMall]
+  );
   const directWebsiteCount = useMemo(
     () => allShops.filter((shop) => Boolean(shop.websiteUrl)).length,
     [allShops]
   );
 
   const hasActiveFilters =
+    filters.mall !== 'All' ||
     filters.query.trim().length > 0 ||
     filters.category !== 'All' ||
     filters.level !== 'All' ||
@@ -170,9 +194,10 @@ export default function App() {
     }
   };
 
-  const handleSelectFloor = (level: MallLevel) => {
+  const handleSelectFloor = (mall: MallId, level: MallLevel) => {
     setFilters((prev) => ({
       ...prev,
+      mall,
       level,
       savedOnly: false,
     }));
@@ -195,6 +220,9 @@ export default function App() {
     }));
     directoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  const defaultAddMall: MallId =
+    filters.mall === 'All' ? 'bashundhara-city' : filters.mall;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF9F7] text-[#18181B]">
@@ -233,6 +261,7 @@ export default function App() {
             <FilterToolbar
               filters={filters}
               onUpdateFilters={handleUpdateFilters}
+              mallCounts={mallCounts}
               categoryCounts={categoryCounts}
               savedCount={savedIds.length}
               resultCount={filteredShops.length}
@@ -252,8 +281,8 @@ export default function App() {
                 </p>
                 <p className="mt-2 text-sm text-[#52525B] max-w-md mx-auto">
                   {filters.savedOnly && savedIds.length === 0
-                    ? 'Bookmark any shop card to keep your favorite Bashundhara City cosmetic websites handy.'
-                    : 'Try broadening your search keyword or resetting the active category and floor filters.'}
+                    ? 'Bookmark any shop card to keep your favorite Bashundhara City and Jamuna Future Park cosmetic websites handy.'
+                    : 'Try broadening your search keyword or resetting the active mall, category, and floor filters.'}
                 </p>
                 <button
                   type="button"
@@ -300,9 +329,12 @@ export default function App() {
         </section>
 
         <FloorGuideSection
+          guideMall={guideMall}
+          onGuideMallChange={setGuideMall}
           floors={floorSummaries}
+          activeMall={filters.mall}
           activeLevel={filters.level}
-          onSelectLevel={handleSelectFloor}
+          onSelectFloor={handleSelectFloor}
         />
       </main>
 
@@ -317,6 +349,7 @@ export default function App() {
 
       <AddShopModal
         isOpen={isAddModalOpen}
+        defaultMall={defaultAddMall}
         onClose={() => setIsAddModalOpen(false)}
         onSubmitShop={handleAddShop}
       />

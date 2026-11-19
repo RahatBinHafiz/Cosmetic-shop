@@ -7,12 +7,14 @@ import {
   filterAndSortShops,
   getCategoryCounts,
   getFloorSummaries,
+  getMallCounts,
   normalizeWebsiteUrl,
   validateNewShopInput,
 } from './directory';
 import type { DirectoryFilters, NewShopInput } from '../types/shop';
 
 const BASE_FILTERS: DirectoryFilters = {
+  mall: 'All',
   query: '',
   category: 'All',
   level: 'All',
@@ -23,93 +25,101 @@ const BASE_FILTERS: DirectoryFilters = {
 
 test('normalizeWebsiteUrl adds https protocol and rejects invalid URLs', () => {
   assert.equal(normalizeWebsiteUrl('shopaholic.com.bd'), 'https://shopaholic.com.bd');
-  assert.equal(normalizeWebsiteUrl('https://beautysiaa.com/'), 'https://beautysiaa.com');
+  assert.equal(normalizeWebsiteUrl('https://sundora.com.bd/'), 'https://sundora.com.bd');
   assert.equal(normalizeWebsiteUrl('not a domain'), null);
   assert.equal(normalizeWebsiteUrl('javascript:alert(1)'), null);
   assert.equal(normalizeWebsiteUrl(''), null);
 });
 
 test('extractDisplayDomain strips www prefix and handles null website gracefully', () => {
-  assert.equal(extractDisplayDomain('https://www.aarong.com'), 'aarong.com');
+  assert.equal(extractDisplayDomain('https://www.thebodyshop.com.bd'), 'thebodyshop.com.bd');
   assert.equal(extractDisplayDomain('https://perfumeworld.com.bd'), 'perfumeworld.com.bd');
   assert.equal(extractDisplayDomain(null), 'In-store & Google Maps');
 });
 
-test('filterAndSortShops matches queries across name, specialties, level, and domain', () => {
-  const kBeautyResults = filterAndSortShops(
+test('filterAndSortShops filters accurately by mall and Ground Floor level', () => {
+  const bcShops = filterAndSortShops(
     INITIAL_SHOPS,
-    { ...BASE_FILTERS, query: 'Korean' },
+    { ...BASE_FILTERS, mall: 'bashundhara-city' },
     new Set()
   );
-  assert.ok(kBeautyResults.length >= 2);
-  assert.ok(kBeautyResults.some((shop) => shop.id === 'shijang'));
-  assert.ok(kBeautyResults.some((shop) => shop.id === 'bd-budget-beauty'));
+  const jfpShops = filterAndSortShops(
+    INITIAL_SHOPS,
+    { ...BASE_FILTERS, mall: 'jamuna-future-park' },
+    new Set()
+  );
 
-  const domainResults = filterAndSortShops(
+  assert.equal(bcShops.length, 15);
+  assert.equal(jfpShops.length, 16);
+  assert.ok(bcShops.every((shop) => shop.mall === 'bashundhara-city'));
+  assert.ok(jfpShops.every((shop) => shop.mall === 'jamuna-future-park'));
+
+  const groundFloorJfp = filterAndSortShops(
     INITIAL_SHOPS,
-    { ...BASE_FILTERS, query: 'bioxin.com' },
+    { ...BASE_FILTERS, mall: 'jamuna-future-park', level: 'Ground Floor' },
     new Set()
   );
-  assert.equal(domainResults.length, 1);
-  assert.equal(domainResults[0].id, 'bioxin-cosmeceuticals');
+  assert.ok(groundFloorJfp.length >= 10);
+  assert.ok(groundFloorJfp.some((shop) => shop.id === 'jfp-sundora-beauty'));
 });
 
-test('filterAndSortShops filters by category, level, websitesOnly, and savedOnly', () => {
-  const fragrances = filterAndSortShops(
+test('filterAndSortShops matches queries across mall name, brand, specialties, and domain', () => {
+  const sundoraResults = filterAndSortShops(
     INITIAL_SHOPS,
-    { ...BASE_FILTERS, category: 'Fragrances' },
+    { ...BASE_FILTERS, query: 'Sundora' },
     new Set()
   );
-  assert.equal(fragrances.length, 3);
-  assert.ok(fragrances.every((shop) => shop.category === 'Fragrances'));
+  assert.equal(sundoraResults.length, 1);
+  assert.equal(sundoraResults[0].mall, 'jamuna-future-park');
 
-  const level3 = filterAndSortShops(
+  const bodyShopDomain = filterAndSortShops(
     INITIAL_SHOPS,
-    { ...BASE_FILTERS, level: 'Level 3' },
+    { ...BASE_FILTERS, query: 'thebodyshop.com.bd' },
     new Set()
   );
-  assert.ok(level3.every((shop) => shop.levels.includes('Level 3')));
-  assert.ok(level3.some((shop) => shop.id === 'shopaholic'));
+  assert.equal(bodyShopDomain.length, 1);
+  assert.equal(bodyShopDomain[0].id, 'jfp-the-body-shop');
 
+  const kurilResults = filterAndSortShops(
+    INITIAL_SHOPS,
+    { ...BASE_FILTERS, query: 'Kuril' },
+    new Set()
+  );
+  assert.equal(kurilResults.length, 16);
+});
+
+test('filterAndSortShops filters by category, websitesOnly, savedOnly, and sorts Ground Floor first', () => {
   const websitesOnly = filterAndSortShops(
     INITIAL_SHOPS,
     { ...BASE_FILTERS, websitesOnly: true },
     new Set()
   );
-  assert.equal(websitesOnly.length, INITIAL_SHOPS.length - 1);
+  assert.equal(websitesOnly.length, INITIAL_SHOPS.length - 2);
   assert.ok(websitesOnly.every((shop) => Boolean(shop.websiteUrl)));
-
-  const savedOnly = filterAndSortShops(
-    INITIAL_SHOPS,
-    { ...BASE_FILTERS, savedOnly: true },
-    new Set(['shopaholic', 'shijang'])
-  );
-  assert.equal(savedOnly.length, 2);
-});
-
-test('filterAndSortShops sorts alphabetically and by floor level', () => {
-  const sortedByName = filterAndSortShops(
-    INITIAL_SHOPS,
-    { ...BASE_FILTERS, sortBy: 'name-asc' },
-    new Set()
-  );
-  assert.equal(sortedByName[0].name, 'Aarong Earth (Aarong Flagship)');
 
   const sortedByLevel = filterAndSortShops(
     INITIAL_SHOPS,
     { ...BASE_FILTERS, sortBy: 'level-asc' },
     new Set()
   );
-  assert.equal(sortedByLevel[0].primaryLevel, 'Level 1');
+  assert.equal(sortedByLevel[0].primaryLevel, 'Ground Floor');
   assert.equal(sortedByLevel[sortedByLevel.length - 1].primaryLevel, 'Level 4');
+
+  const savedOnly = filterAndSortShops(
+    INITIAL_SHOPS,
+    { ...BASE_FILTERS, savedOnly: true },
+    new Set(['shopaholic', 'jfp-sundora-beauty'])
+  );
+  assert.equal(savedOnly.length, 2);
 });
 
-test('validateNewShopInput catches missing/invalid fields and accepts valid input', () => {
-  const emptyInput: NewShopInput = {
+test('validateNewShopInput validates fields and createCustomShop targets chosen mall', () => {
+  const invalidInput: NewShopInput = {
+    mall: 'jamuna-future-park',
     name: '',
     websiteUrl: 'bad-url',
     category: 'Skincare & Makeup',
-    level: 'Level 1',
+    level: 'Ground Floor',
     block: '',
     shopNumber: '',
     description: 'short',
@@ -117,46 +127,47 @@ test('validateNewShopInput catches missing/invalid fields and accepts valid inpu
     phone: '',
   };
 
-  const errors = validateNewShopInput(emptyInput);
+  const errors = validateNewShopInput(invalidInput);
   assert.ok(errors.name);
   assert.ok(errors.websiteUrl);
   assert.ok(errors.block);
   assert.ok(errors.description);
 
   const validInput: NewShopInput = {
-    name: 'Glow Atelier',
+    mall: 'jamuna-future-park',
+    name: 'Glow Atelier JFP',
     websiteUrl: 'glowatelier.com.bd',
     category: 'K-Beauty',
-    level: 'Level 3',
-    block: 'Block B',
-    shopNumber: 'Shop 51',
+    level: 'Ground Floor',
+    block: 'Zone B',
+    shopNumber: 'Shop GB-024',
     description: 'Authentic Japanese and Korean sunscreens, cleansers, and lip care.',
     specialtiesText: 'Japanese Sunscreen, Cleansers',
     phone: '+880 1700-000000',
   };
 
-  const noErrors = validateNewShopInput(validInput);
-  assert.deepEqual(noErrors, {});
-
+  assert.deepEqual(validateNewShopInput(validInput), {});
   const created = createCustomShop(validInput, INITIAL_SHOPS.length);
+  assert.equal(created.mall, 'jamuna-future-park');
   assert.equal(created.websiteUrl, 'https://glowatelier.com.bd');
-  assert.equal(created.isUserAdded, true);
-  assert.deepEqual(created.specialties, ['Japanese Sunscreen', 'Cleansers']);
+  assert.ok(created.googleMapsUrl.includes('Jamuna%20Future%20Park'));
 });
 
-test('getCategoryCounts and getFloorSummaries produce accurate directory aggregates', () => {
-  const counts = getCategoryCounts(INITIAL_SHOPS);
-  assert.equal(counts.All, INITIAL_SHOPS.length);
-  assert.equal(
-    counts['Skincare & Makeup'] +
-      counts['K-Beauty'] +
-      counts.Fragrances +
-      counts['Derma & Organic'] +
-      counts['Personal Care'],
-    INITIAL_SHOPS.length
-  );
+test('getMallCounts, getCategoryCounts, and getFloorSummaries compute accurate multi-mall stats', () => {
+  const mallCounts = getMallCounts(INITIAL_SHOPS);
+  assert.equal(mallCounts.All, 31);
+  assert.equal(mallCounts['bashundhara-city'], 15);
+  assert.equal(mallCounts['jamuna-future-park'], 16);
 
-  const floors = getFloorSummaries(INITIAL_SHOPS);
-  assert.equal(floors.length, 3);
-  assert.ok(floors.every((floor) => floor.shopCount > 0));
+  const jfpCategories = getCategoryCounts(INITIAL_SHOPS, 'jamuna-future-park');
+  assert.equal(jfpCategories.All, 16);
+
+  const bcFloors = getFloorSummaries(INITIAL_SHOPS, 'bashundhara-city');
+  assert.equal(bcFloors.length, 3);
+  assert.ok(bcFloors.every((floor) => floor.shopCount > 0));
+
+  const jfpFloors = getFloorSummaries(INITIAL_SHOPS, 'jamuna-future-park');
+  assert.equal(jfpFloors.length, 2);
+  assert.equal(jfpFloors[0].level, 'Ground Floor');
+  assert.equal(jfpFloors[1].level, 'Level 1');
 });

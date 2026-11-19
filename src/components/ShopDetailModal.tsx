@@ -9,7 +9,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { MALL_INFO } from '../data/shops';
+import { MALLS } from '../data/shops';
 import type { CosmeticShop } from '../types/shop';
 import { extractDisplayDomain } from '../utils/directory';
 
@@ -51,6 +51,7 @@ export function ShopDetailModal({
     return null;
   }
 
+  const mallInfo = MALLS[shop.mall];
   const copyTarget = shop.websiteUrl ?? shop.googleMapsUrl;
   const domainLabel = extractDisplayDomain(shop.websiteUrl);
 
@@ -124,11 +125,11 @@ export function ShopDetailModal({
 
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-sm">
             <div>
-              <dt className="text-xs text-[#71717A]">Mall Location</dt>
+              <dt className="text-xs text-[#71717A]">Mall &amp; Location</dt>
               <dd className="mt-1 font-medium text-[#18181B] tabular-nums">
-                {shop.primaryLevel}, {shop.block}
+                {mallInfo.shortName} · {shop.primaryLevel}
                 <span className="block text-xs font-normal text-[#52525B] mt-0.5">
-                  {shop.shopNumber}
+                  {shop.block}, {shop.shopNumber}
                 </span>
               </dd>
             </div>
@@ -166,8 +167,13 @@ export function ShopDetailModal({
             </div>
 
             <div>
-              <dt className="text-xs text-[#71717A]">Standard Mall Hours</dt>
-              <dd className="mt-1 text-sm text-[#18181B]">{MALL_INFO.hours}</dd>
+              <dt className="text-xs text-[#71717A]">Mall Hours</dt>
+              <dd className="mt-1 text-sm text-[#18181B]">
+                {mallInfo.hours}
+                <span className="block text-xs text-[#71717A] mt-0.5">
+                  Closed {mallInfo.closedDay}
+                </span>
+              </dd>
             </div>
 
             {shop.phone && (

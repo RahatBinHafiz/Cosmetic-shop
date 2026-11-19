@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
-import { MALL_LEVELS, SHOP_CATEGORIES } from '../data/shops';
+import { MALL_LEVELS, MALL_LIST, SHOP_CATEGORIES } from '../data/shops';
 import type {
+  MallId,
   MallLevel,
   NewShopInput,
   ShopCategory,
@@ -11,25 +12,41 @@ import { validateNewShopInput } from '../utils/directory';
 
 interface AddShopModalProps {
   isOpen: boolean;
+  defaultMall: MallId;
   onClose: () => void;
   onSubmitShop: (input: NewShopInput) => void;
 }
 
-const EMPTY_FORM: NewShopInput = {
+const createEmptyForm = (mall: MallId): NewShopInput => ({
+  mall,
   name: '',
   websiteUrl: '',
   category: 'Skincare & Makeup',
-  level: 'Level 1',
+  level: mall === 'jamuna-future-park' ? 'Ground Floor' : 'Level 1',
   block: '',
   shopNumber: '',
   description: '',
   specialtiesText: '',
   phone: '',
-};
+});
 
-export function AddShopModal({ isOpen, onClose, onSubmitShop }: AddShopModalProps) {
-  const [formState, setFormState] = useState<NewShopInput>(EMPTY_FORM);
+export function AddShopModal({
+  isOpen,
+  defaultMall,
+  onClose,
+  onSubmitShop,
+}: AddShopModalProps) {
+  const [formState, setFormState] = useState<NewShopInput>(() => createEmptyForm(defaultMall));
   const [errors, setErrors] = useState<ShopValidationErrors>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormState((prev) => ({
+        ...prev,
+        mall: defaultMall,
+      }));
+    }
+  }, [isOpen, defaultMall]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -66,7 +83,7 @@ export function AddShopModal({ isOpen, onClose, onSubmitShop }: AddShopModalProp
     }
 
     onSubmitShop(formState);
-    setFormState(EMPTY_FORM);
+    setFormState(createEmptyForm(defaultMall));
     setErrors({});
     onClose();
   };
@@ -92,7 +109,7 @@ export function AddShopModal({ isOpen, onClose, onSubmitShop }: AddShopModalProp
               Add a Cosmetic Shop
             </h2>
             <p className="mt-1 text-sm text-[#52525B]">
-              Save another Bashundhara City store website to your personal directory.
+              Save another Bashundhara City or Jamuna Future Park store website to your directory.
             </p>
           </div>
           <button
@@ -111,6 +128,23 @@ export function AddShopModal({ isOpen, onClose, onSubmitShop }: AddShopModalProp
           noValidate
           className="px-6 py-5 space-y-4 overflow-y-auto flex-1"
         >
+          <div>
+            <label htmlFor="shop-mall" className="block text-sm font-medium text-[#18181B]">
+              Shopping mall
+            </label>
+            <select
+              id="shop-mall"
+              value={formState.mall}
+              onChange={(event) => updateField('mall', event.target.value as MallId)}
+              className="mt-1.5 w-full h-11 px-3 text-sm text-[#18181B] bg-[#FAF9F7] border border-[#DCD7CF] rounded-lg focus:bg-white focus:border-[#9E4A56] focus:outline-none focus:ring-2 focus:ring-[#9E4A56]/20"
+            >
+              {MALL_LIST.map((mall) => (
+                <option key={mall.id} value={mall.id}>
+                  {mall.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label htmlFor="shop-name" className="block text-sm font-medium text-[#18181B]">
               Shop name <span className="text-[#9E4A56]">*</span>
